@@ -74,6 +74,7 @@ application-dev.properties
 application-prod.properties
 application-secret.properties
 application.properties
+application.yml
 
 # Supabase credentials
 supabase-credentials.properties
