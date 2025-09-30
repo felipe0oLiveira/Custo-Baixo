@@ -1,5 +1,8 @@
 package org.custobaixo.entity;
 
+import lombok.Getter;
+
+@Getter
 public enum ProductCategory {
     ELETRONICOS("Eletrônicos"),
     PASSAGENS_AEREAS("Passagens Aéreas"),
@@ -16,9 +19,5 @@ public enum ProductCategory {
 
     ProductCategory(String displayName) {
         this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
     }
 }
