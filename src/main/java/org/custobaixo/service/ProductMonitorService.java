@@ -48,6 +48,12 @@ public class ProductMonitorService {
         return repository.findByIsActiveTrue();
     }
 
+    // Buscar todos os produtos (ativos e inativos)
+    @Transactional(readOnly = true)
+    public List<ProductMonitor> getAllProducts() {
+        return repository.findAll();
+    }
+
     // Buscar produtos por categoria
     @Transactional(readOnly = true)
     public List<ProductMonitor> getProductsByCategory(ProductCategory category) {
@@ -75,11 +81,19 @@ public class ProductMonitorService {
         });
     }
 
-    // Verificar preço de um produto específico
-    public void checkProductPrice(ProductMonitor product) {
-        try {
-            log.info("Verificando preço do produto: {} ({})", product.getId(), product.getProductName());
+    // Verificar preço de um produto específico por ID
+    public ProductMonitor checkProductPrice(Long id) {
+        log.info("Verificando preço do produto ID: {}", id);
 
+        Optional<ProductMonitor> productOpt = repository.findById(id);
+        if (productOpt.isEmpty()) {
+            log.warn("Produto ID {} não encontrado", id);
+            return null;
+        }
+
+        ProductMonitor product = productOpt.get();
+
+        try {
             // Extrair preço atual
             BigDecimal currentPrice = webScrapingService.extractPrice(product);
 
@@ -93,7 +107,45 @@ public class ProductMonitorService {
 
                 // Verificar se preço alvo foi atingido
                 if (currentPrice.compareTo(product.getTargetPrice()) <= 0) {
-                    log.info("🎉 PREÇO ALVO ATINGIDO! Produto {}: R$ {} (Alvo: R$ {})",
+                    log.info(" PREÇO ALVO ATINGIDO! Produto {}: R$ {} (Alvo: R$ {})",
+                            product.getId(), currentPrice, product.getTargetPrice());
+
+                    // Marcar para notificação
+                    product.setNotificationSent(false); // Para enviar notificação
+                }
+
+                // Salvar atualizações
+                return repository.save(product);
+            } else {
+                log.warn("Não foi possível extrair preço do produto: {}", product.getId());
+                return product;
+            }
+
+        } catch (Exception e) {
+            log.error("Erro ao verificar preço do produto: {}", product.getId(), e);
+            return product;
+        }
+    }
+
+    // Verificar preço de um produto específico (método original mantido)
+    public void checkProductPrice(ProductMonitor product) {
+        try {
+            log.info("Verificando preço do produto: {} ({})", product.getId(), product.getProductName());
+
+            // Extrair preço atual
+            BigDecimal currentPrice = webScrapingService.extractPrice(product);
+
+            if (currentPrice != null) {
+                // Atualizar preço atual
+                product.setCurrentPrice(currentPrice);
+                product.setLastChecked(LocalDateTime.now());
+
+                log.info(" Produto {}: Preço atual R$ {}, Alvo R$ {}",
+                        product.getId(), currentPrice, product.getTargetPrice());
+
+                // Verificar se preço alvo foi atingido
+                if (currentPrice.compareTo(product.getTargetPrice()) <= 0) {
+                    log.info("PREÇO ALVO ATINGIDO! Produto {}: R$ {} (Alvo: R$ {})",
                             product.getId(), currentPrice, product.getTargetPrice());
 
                     // Marcar para notificação
@@ -106,7 +158,7 @@ public class ProductMonitorService {
                 // Salvar atualizações
                 repository.save(product);
             } else {
-                log.warn("Não foi possível extrair preço do produto: {}", product.getId());
+                log.warn(" Não foi possível extrair preço do produto: {}", product.getId());
             }
 
         } catch (Exception e) {
@@ -159,6 +211,23 @@ public class ProductMonitorService {
     @Transactional(readOnly = true)
     public long getProductsByCategoryCount(ProductCategory category) {
         return repository.findByCategoryAndIsActiveTrue(category).size();
+    }
+
+    // Remover produtos inativos há mais de 30 dias
+    public int cleanupInactiveProducts() {
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+
+        List<ProductMonitor> inactiveProducts = repository.findByIsActiveFalseAndUpdatedAtBefore(thirtyDaysAgo);
+
+        if (inactiveProducts.isEmpty()) {
+            log.info("Nenhum produto inativo para remover");
+            return 0;
+        }
+
+        repository.deleteAll(inactiveProducts);
+        log.info("Removidos {} produtos inativos", inactiveProducts.size());
+
+        return inactiveProducts.size();
     }
 
     // Métodos auxiliares
