@@ -40,5 +40,8 @@ public interface ProductMonitorRepository extends JpaRepository<ProductMonitor, 
     // Buscar produtos que não foram verificados há muito tempo
     @Query("SELECT p FROM ProductMonitor p WHERE p.isActive = true AND p.lastChecked < :threshold")
     List<ProductMonitor> findStaleProducts(@Param("threshold") LocalDateTime threshold);
+
+    // Buscar produtos inativos há mais de X dias
+    List<ProductMonitor> findByIsActiveFalseAndUpdatedAtBefore(LocalDateTime date);
 }
 
