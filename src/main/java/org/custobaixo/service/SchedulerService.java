@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.custobaixo.entity.ProductMonitor;
 import org.custobaixo.entity.ProductCategory;
+import org.custobaixo.model.VerificationResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -45,14 +46,14 @@ public class SchedulerService {
 
     @Scheduled(cron = "0 */2 * * * *") // A cada 2 minutos
     public void checkCriticalProducts() {
-        log.info("⚡ Verificação rápida de produtos críticos...");
+        log.info("Verificação rápida de produtos críticos...");
 
         executeWithErrorHandling("Verificação crítica", () -> {
             List<ProductMonitor> criticalProducts = productService.getAllActiveProducts().stream()
                     .filter(isCriticalProduct())
                     .collect(Collectors.toList());
 
-            log.info("🎯 Verificando {} produtos críticos", criticalProducts.size());
+            log.info("Verificando {} produtos críticos", criticalProducts.size());
 
             return verifyProducts(criticalProducts);
         });
@@ -60,11 +61,11 @@ public class SchedulerService {
 
     @Scheduled(cron = "0 0 * * * *") // A cada hora
     public void cleanupInactiveProducts() {
-        log.info("🧹 Iniciando limpeza de produtos inativos...");
+        log.info("Iniciando limpeza de produtos inativos...");
 
         executeWithErrorHandling("Limpeza", () -> {
             int cleanedCount = productService.cleanupInactiveProducts();
-            log.info("✅ Limpeza concluída - {} produtos removidos", cleanedCount);
+            log.info("Limpeza concluída - {} produtos removidos", cleanedCount);
             return cleanedCount;
         });
     }
@@ -169,29 +170,5 @@ public class SchedulerService {
     private void logVerificationResult(VerificationResult result) {
         log.info(" Verificação concluída - Sucessos: {}, Erros: {}, Preços alvo atingidos: {}",
                 result.getSuccessCount(), result.getErrorCount(), result.getTargetReachedCount());
-    }
-
-    //  INNER CLASSES =
-
-    @lombok.Builder
-    @lombok.Data
-    private static class VerificationResult {
-        private int successCount;
-        private int errorCount;
-        private int targetReachedCount;
-        private int priceChangedCount;
-
-        public static VerificationResult empty() {
-            return VerificationResult.builder().build();
-        }
-
-        public VerificationResult merge(VerificationResult other) {
-            return VerificationResult.builder()
-                    .successCount(this.successCount + other.successCount)
-                    .errorCount(this.errorCount + other.errorCount)
-                    .targetReachedCount(this.targetReachedCount + other.targetReachedCount)
-                    .priceChangedCount(this.priceChangedCount + other.priceChangedCount)
-                    .build();
-        }
     }
 }

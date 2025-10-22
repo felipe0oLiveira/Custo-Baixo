@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.HashMap;
+import java.util.Random;
 
 
 @Service
@@ -18,42 +19,34 @@ public class WebScrapingService {
 
     private static final Logger log = LoggerFactory.getLogger(WebScrapingService.class);
 
+    //  ROTAÇÃO DE USER-AGENTS
+    private final String[] USER_AGENTS = {
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0"
+    };
+    
+    //  PROXIES (exemplo - em produção use serviços pagos)
+    private final String[][] PROXIES = {
+        {"proxy1.example.com", "8080"},
+        {"proxy2.example.com", "8080"},
+        {"proxy3.example.com", "8080"}
+    };
+    
+    private final Random random = new Random();
+
     // Mapa de sites e seus métodos de extração
     private final Map<String, Function<ProductMonitor, BigDecimal>> siteExtractors = createSiteExtractors();
 
     private Map<String, Function<ProductMonitor, BigDecimal>> createSiteExtractors() {
         Map<String, Function<ProductMonitor, BigDecimal>> extractors = new HashMap<>();
+        // Apenas os 4 sites ativos do sistema
         extractors.put("amazon.com.br", this::extractAmazonPrice);
         extractors.put("mercadolivre.com.br", this::extractMercadoLivrePrice);
-        extractors.put("magazineluiza.com.br", this::extractMagazineLuizaPrice);
-        extractors.put("americanas.com.br", this::extractAmericanasPrice);
-        extractors.put("submarino.com.br", this::extractSubmarinoPrice);
-        extractors.put("shoptime.com.br", this::extractGenericPrice);
-        extractors.put("extra.com.br", this::extractGenericPrice);
-        extractors.put("ponto.com.br", this::extractGenericPrice);
-        extractors.put("zara.com", this::extractZaraPrice);
-        extractors.put("renner.com.br", this::extractGenericPrice);
-        extractors.put("cea.com.br", this::extractGenericPrice);
-        extractors.put("hm.com", this::extractGenericPrice);
-        extractors.put("nike.com.br", this::extractNikePrice);
-        extractors.put("adidas.com.br", this::extractGenericPrice);
-        extractors.put("olympikus.com.br", this::extractGenericPrice);
-        extractors.put("puma.com.br", this::extractGenericPrice);
-        extractors.put("centauro.com.br", this::extractGenericPrice);
-        extractors.put("saraiva.com.br", this::extractSaraivaPrice);
-        extractors.put("cultura.com.br", this::extractGenericPrice);
-        extractors.put("voeazul.com.br", this::extractAzulPrice);
-        extractors.put("voegol.com.br", this::extractGolPrice);
-        extractors.put("latam.com", this::extractLatamPrice);
-        extractors.put("decolar.com.br", this::extractGenericPrice);
-        extractors.put("123milhas.com.br", this::extractGenericPrice);
-        extractors.put("booking.com", this::extractGenericPrice);
-        extractors.put("hotels.com", this::extractGenericPrice);
-        extractors.put("leroymerlin.com.br", this::extractGenericPrice);
-        extractors.put("casasbahia.com.br", this::extractGenericPrice);
-        extractors.put("sephora.com.br", this::extractGenericPrice);
-        extractors.put("oboticario.com.br", this::extractGenericPrice);
-        extractors.put("natura.com.br", this::extractGenericPrice);
+        extractors.put("kabum.com.br", this::extractGenericPrice);
+        extractors.put("netshoes.com.br", this::extractGenericPrice);
         return extractors;
     }
 
@@ -81,7 +74,7 @@ public class WebScrapingService {
                 .orElse(this::extractGenericPrice);
     }
 
-    // MÉTODOS DE EXTRAÇÃO ESPECÍFICOS
+    // MÉTODOS DE EXTRAÇÃO ESPECÍFICOS (apenas sites ativos)
 
     private BigDecimal extractAmazonPrice(ProductMonitor product) {
         return extractPriceWithSelectors(product,
@@ -98,87 +91,6 @@ public class WebScrapingService {
                 ".price-tag-fraction",
                 ".andes-money-amount__cents",
                 ".price-tag"
-        );
-    }
-
-    private BigDecimal extractMagazineLuizaPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".price-template__text",
-                ".price-template__text--strong",
-                ".price-template",
-                ".price-value"
-        );
-    }
-
-    private BigDecimal extractAmericanasPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".price-current",
-                ".price-value",
-                ".price-now",
-                ".price-main"
-        );
-    }
-
-    private BigDecimal extractSubmarinoPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".price-current",
-                ".price-value",
-                ".price-now",
-                ".price-main"
-        );
-    }
-
-    private BigDecimal extractZaraPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".price-current",
-                ".price-value",
-                ".price-now",
-                ".price-main"
-        );
-    }
-
-    private BigDecimal extractNikePrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".product-price",
-                ".price-value",
-                ".price-current",
-                ".price-now"
-        );
-    }
-
-    private BigDecimal extractSaraivaPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".price-value",
-                ".price-current",
-                ".price-now",
-                ".price-main"
-        );
-    }
-
-    private BigDecimal extractAzulPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".flight-price .amount",
-                ".price-value",
-                ".price-current",
-                ".price-now"
-        );
-    }
-
-    private BigDecimal extractGolPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".price-value",
-                ".flight-price",
-                ".price-current",
-                ".price-now"
-        );
-    }
-
-    private BigDecimal extractLatamPrice(ProductMonitor product) {
-        return extractPriceWithSelectors(product,
-                ".flight-price",
-                ".price-value",
-                ".price-current",
-                ".price-now"
         );
     }
 
@@ -202,9 +114,35 @@ public class WebScrapingService {
     }
 
     private Document connectToUrl(String url) throws Exception {
+        //  Selecionar User-Agent aleatório
+        String userAgent = USER_AGENTS[random.nextInt(USER_AGENTS.length)];
+        log.debug("Usando User-Agent: {}", userAgent);
+        
+        // Selecionar proxy aleatório (se disponível)
+        String[] proxy = PROXIES[random.nextInt(PROXIES.length)];
+        String proxyHost = proxy[0];
+        int proxyPort = Integer.parseInt(proxy[1]);
+        log.debug("Usando proxy: {}:{}", proxyHost, proxyPort);
+        
         return Jsoup.connect(url)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .userAgent(userAgent)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
+                .header("Accept-Language", "pt-BR,pt;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
+                .header("Accept-Encoding", "gzip, deflate, br")
+                .header("DNT", "1")
+                .header("Connection", "keep-alive")
+                .header("Upgrade-Insecure-Requests", "1")
+                .header("Sec-Fetch-Dest", "document")
+                .header("Sec-Fetch-Mode", "navigate")
+                .header("Sec-Fetch-Site", "none")
+                .header("Sec-Fetch-User", "?1")
+                .header("Cache-Control", "max-age=0")
+                .header("sec-ch-ua", "\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"")
+                .header("sec-ch-ua-mobile", "?0")
+                .header("sec-ch-ua-platform", "\"Windows\"")
                 .timeout(10000)
+                .followRedirects(true)
+                .maxBodySize(0)
                 .get();
     }
 
