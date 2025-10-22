@@ -230,6 +230,21 @@ public class ProductMonitorService {
         return inactiveProducts.size();
     }
 
+    // Deletar todos os produtos
+    public int deleteAllProducts() {
+        List<ProductMonitor> allProducts = repository.findAll();
+        
+        if (allProducts.isEmpty()) {
+            log.info("Nenhum produto para remover");
+            return 0;
+        }
+        
+        repository.deleteAll(allProducts);
+        log.info("Removidos {} produtos do sistema", allProducts.size());
+        
+        return allProducts.size();
+    }
+
     // Métodos auxiliares
     private String extractSiteNameFromUrl(String url) {
         try {
